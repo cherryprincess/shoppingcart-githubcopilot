@@ -1,7 +1,6 @@
 {
   "name": "Shopping Cart Full Stack Dev",
-  "dockerComposeFile": "../docker-compose.yml",
-  "service": "frontend",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20-bookworm",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "forwardPorts": [3000, 5000, 5432],
   "postCreateCommand": "npm install && cd backend && npm install",
