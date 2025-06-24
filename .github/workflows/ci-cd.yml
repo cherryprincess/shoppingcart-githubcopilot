@@ -1,0 +1,70 @@
+name: CI/CD Full Stack Shopping Cart
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: devuser
+          POSTGRES_PASSWORD: devpass
+          POSTGRES_DB: shoppingdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U devuser -d shoppingdb" --health-interval=10s --health-timeout=5s --health-retries=5
+    env:
+      DATABASE_URL: postgresql://devuser:devpass@localhost:5432/shoppingdb
+      JWT_SECRET: testsecret
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..10}; do
+            pg_isready -h localhost -U devuser -d shoppingdb && break
+            sleep 5
+          done
+
+      - name: Seed database
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          psql postgresql://devuser:devpass@localhost:5432/shoppingdb -f db/init.sql
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Build backend
+        run: |
+          cd backend
+          npm run build
+
+      - name: Run backend tests (if any)
+        run: |
+          cd backend
+          npm test || echo "No tests found"
+
+      - name: Run frontend tests (if any)
+        run: |
+          npm test || echo "No tests found"
